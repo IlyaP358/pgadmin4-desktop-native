@@ -15,9 +15,9 @@ options=(!strip !debug)
 
 depends=(
   'python'
-  'postgresql-libs' # For psycopg (pg_config)
-  'electron34'      # System Electron 34 
-  'libsecret'       # For python keyring
+  'postgresql-libs'
+  'electron34'
+  'libsecret'
 )
 makedepends=(
   'python'
@@ -40,26 +40,21 @@ sha256sums=('f72f5d688eed9f65d523046492ce868bcb4251c04f763cb6b834b13be0ad6744'
 build() {
   cd "${srcdir}/pgadmin4-${pkgver}"
 
-  # 1. Web Frontend Bundle
   sed -i '/"packageManager":/d' web/package.json
   cd web
   yarn install
   yarn run bundle
   cd ..
 
-  # 2. Python Environment
   _venvdir="${srcdir}/venv-build"
   python -m venv "${_venvdir}"
   "${_venvdir}/bin/pip" install --upgrade pip setuptools wheel
   "${_venvdir}/bin/pip" install -r requirements.txt
 
-  # 3. Electron Runtime Scripts
   cd runtime
   sed -i '/"packageManager":/d' package.json
   
-  # Patch source code to use system python instead of venv
   grep -rl "/venv/bin/python3" . | xargs sed -i 's|/venv/bin/python3|/usr/bin/python3|g' || true
-  # Patch source code to use absolute path for pgAdmin4.py
   grep -rl "/web/pgAdmin4.py" . | xargs sed -i 's|/web/pgAdmin4.py|/opt/pgadmin4-native/web/pgAdmin4.py|g' || true
   
   yarn install --ignore-engines
